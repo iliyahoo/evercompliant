@@ -1,0 +1,35 @@
+
+####################################
+# Stream selected Twitter hashtags #
+# into MongoDB database            #
+# by deploying on Kubernetes       #
+####################################
+
+git clone git@github.com:iliyahoo/evercompliant.git && cd evercompliant
+
+# build an image
+docker build -t iliyahoo13/hashtags_streamer:2.0 .
+
+# upload image to refistry
+docker push iliyahoo13/hashtags_streamer:2.0
+
+# deploy MongoDB from Helm chart
+helm install --name evercompliant --namespace evercompliant stable/mongodb
+
+# Docker registry secret
+kubectl --namespace=evercompliant create secret docker-registry iliyahoo13-docker-registry --docker-server='https://index.docker.io/v1/' --docker-username=XXXXX --docker-password=XXXXX --docker-email='XXXXX'
+
+# Twitter authentication secret
+kubectl --namespace=evercompliant create secret generic twitter-auth --from-literal=consumer_key=XXXXX --from-literal=consumer_secret=XXXXX --from-literal=access_token=XXXXX --from-literal=access_secret=XXXXX
+
+# create MongoDB ConfigMap environments
+kubectl apply -f mongo_config.yml
+
+# deploy hashtags streamer
+kubectl apply -f hashtags_streamer.yml
+
+# connect to the MongoDB shell
+kubectl --namespace=evercompliant exec -it $(kubectl --namespace=evercompliant get pod --selector='app=evercompliant-mongodb' -o jsonpath='{.items[0].metadata.name}') mongo
+> show dbs
+> use evercompliant
+> db["tweets"].find().count()

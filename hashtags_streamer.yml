@@ -1,0 +1,48 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: streamer-deployment
+  namespace: evercompliant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streamer
+  template:
+    metadata:
+      labels:
+        app: streamer
+    spec:
+      containers:
+      - name: streamer
+        image: iliyahoo13/hashtags_streamer:2.0
+        args: [
+          "--mongo-host=$(EVERCOMPLIANT_MONGODB_SERVICE_HOST)",
+          "--mongo-port=$(EVERCOMPLIANT_MONGODB_SERVICE_PORT)"
+        ]
+        envFrom:
+        - configMapRef:
+            name: mongo-config
+        env:
+          - name: consumer_key
+            valueFrom:
+              secretKeyRef:
+                name: twitter-auth
+                key: consumer_key
+          - name: consumer_secret
+            valueFrom:
+              secretKeyRef:
+                name: twitter-auth
+                key: consumer_secret
+          - name: access_token
+            valueFrom:
+              secretKeyRef:
+                name: twitter-auth
+                key: access_token
+          - name: access_secret
+            valueFrom:
+              secretKeyRef:
+                name: twitter-auth
+                key: access_secret
+      imagePullSecrets:
+        - name: iliyahoo13-docker-registry
